@@ -12,6 +12,7 @@ from . import hansenlaw
 from . import linbasex
 from . import onion_bordas
 from . import dasch
+from . import openAbel
 from . import tools
 from . import transform
 from . import tests

@@ -9,13 +9,15 @@ import sys
 if sys.version_info[0] < 3:
     import Tkinter as tk
     from tkFileDialog import askopenfilename
+    import ttk as ttk
+    import tkFont
+    from ScrolledText import *
 else:
     import tkinter as tk
     from tkinter.filedialog import askopenfilename
-import tkinter.ttk as ttk
-import tkinter.font as tkFont
-from tkinter.scrolledtext import *
-#from ScrolledText import *
+    import tkinter.ttk as ttk
+    import tkinter.font as tkFont
+    from tkinter.scrolledtext import *
 
 import matplotlib
 matplotlib.use('TkAgg')

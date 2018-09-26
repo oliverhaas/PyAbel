@@ -15,6 +15,7 @@ from . import direct
 from . import hansenlaw
 from . import linbasex
 from . import onion_bordas
+from . import openAbel
 from . import tools
 
 
@@ -428,6 +429,7 @@ class Transform(object):
             "onion_peeling": dasch.onion_peeling_transform,
             "two_point": dasch.two_point_transform,
             "three_point": dasch.three_point_transform,
+            "openAbel": openAbel.openAbel_transform
         }
 
         self._verboseprint('Calculating {0} Abel transform using {1} method -'
