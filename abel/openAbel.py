@@ -120,15 +120,15 @@ def openAbel_transform(image, dr=1, direction='inverse', **kwargs):
     else:
         forwardBackward = 1
 
-    if kwargs.get('openAbel.method') == None:
+    if kwargs.get('method') == None:
         method = 3
     else:
-        method = kwargs.get('openAbel.method')
+        method = kwargs.get('method')
 
-    if kwargs.get('openAbel.order') == None:
+    if kwargs.get('order') == None:
         order = 2
     else:
-        order = kwargs.get('openAbel.order')
+        order = kwargs.get('order')
 
     try:
         abelObj = openAbel.Abel(cols, forwardBackward, 0., dr, method = method, order = order)

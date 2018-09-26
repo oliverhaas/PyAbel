@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 # Dribinski sample image
-IM = abel.tools.analytical.SampleImage(n=1001).image 
+IM = abel.tools.analytical.SampleImage(n=601).image 
 
 # split into quadrants
 origQ = abel.tools.symmetry.get_image_quadrants(IM)
@@ -19,14 +19,14 @@ orig_speed = abel.tools.vmi.angular_integration(origQ[0], origin=(0,0))
 
 # forward Abel projection
 fIM = abel.Transform(IM, direction="forward", method="openAbel", 
-                     transform_options={'openAbel.method':3, 'openAbel.order':2}).transform
+                     transform_options={'method':3, 'order':2}).transform
 
 # split projected image into quadrants
 Q = abel.tools.symmetry.get_image_quadrants(fIM)
 Q0 = Q[0].copy()
 
-# onion_bordas inverse Abel transform
-borQ0 = abel.openAbel.openAbel_transform(Q0)
+# openAbel inverse Abel transform
+borQ0 = abel.openAbel.openAbel_transform(Q0, method = 3, order = 2)
 # speed distribution
 bor_speed = abel.tools.vmi.angular_integration(borQ0, origin=(0,0))
 
