@@ -167,66 +167,72 @@ def _bs_three_point(cols):
     ----------
     cols : int
         width of the image
+
+    modified by Oliver Haas (github.com/oliverhaas) to be consistently second order
+    approximation and deal with non-zero upper end of the data.
     """
 
-    # basis function Eq. (7)  for j >= i
-    def I0diag(i, j):
-        return np.log((np.sqrt((2*j+1)**2-4*i**2) + 2*j+1)/(2*j))/(2*np.pi)
+    # finite difference derivative stencil
+    FD = np.zeros((cols,cols))
+    FD[0,0:3] = [-1.5, 2., -0.5]
+    FD[-1,-3::] = [0.5, -2., 1.5]
+    I = np.arange(cols)
+    FD[I[1:-1],I[:-2]] = -0.5
+    FD[I[1:-1],I[2:]] = 0.5
 
-    # j > i
-    def I0(i, j):
+    # finite difference second derivative stencil
+    FD2 = np.zeros((cols,cols))
+    FD2[0,0:4] = [2., -5., 4., -1.]
+    FD2[-1,-4::] = [-1., 4., -5., 2.]
+    I = np.arange(cols)
+    FD2[I[1:-1],I[:-2]] = 1.
+    FD2[I[1:-1],I[1:-1]] = -2.
+    FD2[I[1:-1],I[2:]] = 1.
+
+    # Analytical integration coefficients
+    def c0(i, j):
         return np.log(((np.sqrt((2*j + 1)**2 - 4*i**2) + 2*j + 1))/ 
-                       (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1))/(2*np.pi) 
+                       (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1))
 
-    # i = j  NB minus -2I_ij typo in Dasch paper
-    def I1diag(i, j):
-        return np.sqrt((2*j+1)**2 - 4*i**2)/(2*np.pi) - 2*j*I0diag(i, j)
+    def c1(i, j):
+        return 0.5*(np.sqrt((2*j+1)**2 - 4*i**2) - np.sqrt((2*j-1)**2 - 4*i**2)) - j*c0(i,j)
 
-    # j > i
-    def I1(i, j):
-        return (np.sqrt((2*j+1)**2 - 4*i**2) -\
-                np.sqrt((2*j-1)**2 - 4*i**2))/(2*np.pi) - 2*j*I0(i, j)
+    def c0diag(i):
+        return np.log((np.sqrt(1 + 4*i) + 2*i + 1)/(2*i))
 
-    D = np.zeros((cols, cols))
+    def c1diag(i):
+        return 0.5*np.sqrt(1 + 4*i) - i*c0diag(i)
 
-    # matrix indices ------------------
-    # i = j
-    I, J = np.diag_indices(cols)
-    I = I[1:]
-    J = J[1:]  # drop special cases (0,0), (0,1)
+    def c0end(i, j):
+        return np.log((2*np.sqrt(j**2 - i**2) + 2*j)/ 
+                      (np.sqrt((2*j - 1)**2 - 4*i**2) + 2*j - 1))
 
-    # j = i - 1
-    Ib, Jb = I, J-1
+    def c1end(i, j):
+        return (np.sqrt(j**2 - i**2) - 0.5*np.sqrt((2*j-1)**2 - 4*i**2)) - j*c0end(i,j)
 
-    # j = i + 1
-    Iu, Ju = I-1, J
-    Iu = Iu[1:]  # drop special case (0, 1)
-    Ju = Ju[1:] 
 
-    # j > i + 1
-    Iut, Jut = np.triu_indices(cols, k=2)
-    Iut = Iut[1:]  # drop special case (0, 2)
-    Jut = Jut[1:] 
+    # Analytical integration matrix
+    D0 = np.zeros((cols,cols))
+    D1 = np.zeros((cols,cols))
 
-    # D operator matrix ------------------
-    # j = i - 1
-    D[Ib, Jb] = I0diag(Ib, Jb+1) - I1diag(Ib, Jb+1)
+    # diagonal
+    I = np.arange(1, cols-1)
+    D0[I,I] = c0diag(I)
+    D1[I,I] = c1diag(I)
+    D0[0,0] = 0.
+    D1[0,0] = 0.5
 
-    # j = i
-    D[I, J] = I0(I, J+1) - I1(I, J+1) + 2*I1diag(I, J)
+    # triangle bulk
+    Iut, Jut = np.triu_indices(cols-1, k=1)
+    D0[Iut, Jut] = c0(Iut,Jut)
+    D1[Iut, Jut] = c1(Iut,Jut)
 
-    # j = i + 1
-    D[Iu, Ju] = I0(Iu, Ju+1) - I1(Iu, Ju+1) + 2*I1(Iu, Ju) -\
-                I0diag(Iu, Ju-1) - I1diag(Iu, Ju-1)
+    # end
+    Iend = np.arange(cols-1)
+    D0[Iend,-1] = c0end(Iend,cols-1)
+    D1[Iend,-1] = c1end(Iend,cols-1)
 
-    # j > i + 1
-    D[Iut, Jut] = I0(Iut, Jut+1) - I1(Iut, Jut+1) + 2*I1(Iut, Jut) -\
-                  I0(Iut, Jut-1) - I1(Iut, Jut-1)
-
-    # special cases (that switch between I0, I1 cases)
-    D[0, 2] = I0(0, 3) - I1(0, 3) + 2*I1(0, 2) - I0(0, 1) - I1(0, 1) 
-    D[0, 1] = I0(0, 2) - I1(0, 2) + 2*I1(0, 1) - 1/np.pi
-    D[0, 0] = I0(0, 1) - I1(0, 1) + 1/np.pi
+    D = -(D0.dot(FD) + D1.dot(FD2))/np.pi
 
     return D
 
